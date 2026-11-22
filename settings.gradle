@@ -1,0 +1,7 @@
+plugins {
+  // Permite que Gradle descargue solo el JDK que necesita.
+  id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
+// El cliente solo dibuja y manda teclas: no tiene modulo de servidor ni fisica.
+include 'lwjgl3', 'core'
