@@ -43,17 +43,17 @@ java -Dgangfights.servidor=192.168.1.20 -jar GangFights-1.0.0.jar
 
 ## Controles
 
-| | Teclas 1 | Teclas 2 |
-|---|---|---|
-| Moverse | A / D | Flechas izq / der |
-| Saltar | W | Flecha arriba |
-| Agacharse (recoger items) | S | Flecha abajo |
-| Golpear | 1 | N |
-| Sacar / guardar la pistola | 2 | M |
-| Subir / bajar la mira | W / S | Flechas arriba / abajo |
-| Disparar | O | E |
+Los dos jugadores (clientes) usan las mismas teclas:
 
-Cada jugador usa las teclas que prefiera (los dos juegos de teclas funcionan en cualquier PC).
+| Acción | Tecla |
+|---|---|
+| Moverse | A / D |
+| Saltar | W |
+| Agacharse (recoger items) | S |
+| Golpear | 1 o ESPACIO |
+| Sacar / guardar la pistola | O |
+| Subir / bajar la mira | W / S |
+| Disparar | P |
 `F1` silencia el sonido durante la partida. `ESC` vuelve al menú.
 
 La pistola se recoge agachándose sobre ella. Solo se puede apuntar en el piso; apuntando no se mueve.
@@ -63,7 +63,7 @@ Un golpe saca 10 de vida y aturde (combo de 3); una bala saca 10 de vida y solo 
 
 ```
 core/src/main/java
-  Red/        ClienteRed (hilo de red, broadcast, conexión), EstadoJuego (foto del servidor), Protocolo
+  Red/        HiloCliente (hilo de red, broadcast, conexión), EstadoJuego (foto del servidor), Protocolo
   Pantallas/  MenuInicial, PantallaEspera (1/2), PantallaPartidaOnline, PantallaConfiguracion, PantallaInicio
   Entidades/  JugadorVisualOnline, BalasVisuales, Personaje   (solo dibujan)
   Items/      ItemsVisuales

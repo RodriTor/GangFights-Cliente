@@ -1,23 +1,16 @@
 package Red;
 
-/**
- * Una "foto" del juego enviada por el servidor (mensaje ESTADO). No se modifica una vez creada.
- *
- * ESTADO;seq;fase;ronda;ganadorRonda;rondas1;rondas2;conectados;revanchas;cuenta;jugador1;jugador2;botiquin;pistola;balas
- *   jugador = x,y,vida,animacion,mirandoDerecha,pistola,apuntando,anguloMira,rojo
- *   botiquin / pistola = x,base   o   "-" si no hay
- *   balas = x,y,angulo/x,y,angulo/...   o   "-" si no hay
- */
+
 public class EstadoJuego {
 
-    // Fases (mismo orden que FasePartida del servidor)
+    // Fases
     public static final int FASE_ESPERANDO = 0;
     public static final int FASE_CUENTA = 1;
     public static final int FASE_EN_CURSO = 2;
     public static final int FASE_RONDA_TERMINADA = 3;
     public static final int FASE_FINALIZADA = 4;
 
-    // Animaciones (mismo orden que AnimacionJugador del servidor)
+    // Animaciones
     public static final int ANIM_QUIETO = 0;
     public static final int ANIM_CORRER = 1;
     public static final int ANIM_SALTO = 2;
@@ -62,11 +55,9 @@ public class EstadoJuego {
     public final int segundosCuenta;
     public final DatosJugador[] jugadores = new DatosJugador[2];
 
-    /** {x, base} o null si no hay item. */
     public final int[] botiquin;
     public final int[] pistola;
 
-    /** Cada bala es {x, y, angulo}. Lista vacia si no hay balas en el aire. */
     public final int[][] balas;
 
     private final int conectados;
@@ -108,7 +99,6 @@ public class EstadoJuego {
         return new int[] {Integer.parseInt(c[0]), Integer.parseInt(c[1])};
     }
 
-    /** @return la foto, o null si el mensaje esta incompleto o mal formado (UDP puede entregar basura). */
     public static EstadoJuego leer(String mensaje) {
         try {
             String[] t = mensaje.split(Protocolo.SEPARADOR);
@@ -119,7 +109,6 @@ public class EstadoJuego {
         }
     }
 
-    /** indice 0 = jugador 1, indice 1 = jugador 2 */
     public boolean estaConectado(int indice) {
         return (conectados & (1 << indice)) != 0;
     }

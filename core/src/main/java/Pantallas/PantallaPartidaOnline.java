@@ -14,7 +14,7 @@ import Items.ItemsVisuales;
 import Logica.EstadoPartida;
 import Logica.Partida;
 import Mundo.MapaOnline;
-import Red.ClienteRed;
+import Red.HiloCliente;
 import Red.EstadoJuego;
 import Utilidades.Config;
 import Utilidades.Recursos;
@@ -28,23 +28,17 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-/**
- * La partida online vista desde un cliente. Esta pantalla NO tiene fisica ni reglas:
- *  1) lee las teclas y se las manda al servidor (enviarEntrada),
- *  2) dibuja lo que el servidor dice que esta pasando (obtenerEstado).
- * El jugador 1 es Jasinski (izquierda) y el jugador 2 es Schepis (derecha).
- */
 public class PantallaPartidaOnline implements Screen {
 
     private static final float INTERVALO_ENTRADA = 1f / 60f;
     private static final float INTERVALO_REVANCHA = 0.25f;
     private static final String AYUDA =
-        "A/D mover  W saltar  S agachar/recoger  1 golpe  2 pistola  W/S mira  O disparo  F1 silenciar  ESC salir";
+        "A/D mover  W saltar  S agachar/recoger  1 golpe  O pistola  W/S mira  P disparo  F1 silenciar  ESC salir";
 
     private final NavegadorPantallas navegador;
     private final GestorAudio audio;
     private final ControlAudio controlAudio;
-    private final ClienteRed clienteRed;
+    private final HiloCliente hiloCliente;
 
     private OrthographicCamera camara;
     private Viewport viewport;
@@ -62,7 +56,7 @@ public class PantallaPartidaOnline implements Screen {
     private EstadoJuego estadoAnterior;
     private final int indiceLocal;
 
-    // Teclas: los saltos y golpes se cuentan (ver ClienteRed.enviarEntrada)
+    // Teclas: los saltos y golpes se cuentan
     private int contadorSaltos = 0;
     private int contadorGolpes = 0;
     private int contadorApuntar = 0;
@@ -72,13 +66,12 @@ public class PantallaPartidaOnline implements Screen {
     private boolean pidioRevancha = false;
     private float tiempoDesdeRevancha = 0f;
 
-    public PantallaPartidaOnline(NavegadorPantallas navegador, GestorAudio audio, ClienteRed clienteRed) {
+    public PantallaPartidaOnline(NavegadorPantallas navegador, GestorAudio audio, HiloCliente hiloCliente) {
         this.navegador = navegador;
         this.audio = audio;
-        // La M se usa para apuntar (jugador 2), por eso en la partida el sonido se silencia con F1
         this.controlAudio = new ControlAudio(audio, Input.Keys.F1);
-        this.clienteRed = clienteRed;
-        this.indiceLocal = clienteRed.getNumeroJugador() - 1;
+        this.hiloCliente = hiloCliente;
+        this.indiceLocal = hiloCliente.getNumeroJugador() - 1;
     }
 
     @Override
@@ -108,12 +101,12 @@ public class PantallaPartidaOnline implements Screen {
     public void render(float delta) {
         controlAudio.actualizar();
 
-        boolean conectado = clienteRed.getEtapa() == ClienteRed.Etapa.CONECTADO;
-        EstadoJuego estado = clienteRed.obtenerEstado();
+        boolean conectado = hiloCliente.getEtapa() == HiloCliente.Etapa.CONECTADO;
+        EstadoJuego estado = hiloCliente.obtenerEstado();
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
             || (!conectado && Gdx.input.isKeyJustPressed(Input.Keys.ENTER))) {
-            navegador.irAMenu(); // al salir de esta pantalla se cierra la conexion
+            navegador.irAMenu();
             return;
         }
 
@@ -133,7 +126,7 @@ public class PantallaPartidaOnline implements Screen {
     }
 
 
-    /** Copia al dibujo lo que dijo el servidor. */
+    /* Copia al dibujo lo que dijo el servidor. */
     private void aplicarEstado(EstadoJuego estado) {
         for (int i = 0; i < 2; i++) {
             EstadoJuego.DatosJugador datos = estado.jugadores[i];
@@ -164,36 +157,35 @@ public class PantallaPartidaOnline implements Screen {
     }
 
     private void enviarTeclas(float delta, EstadoJuego estado) {
-        boolean izquierda = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
-        boolean derecha = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
-        boolean agachar = Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN);
-        boolean arriba = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
+        // Los dos clientes usan las mismas teclas
+        boolean izquierda = Gdx.input.isKeyPressed(Input.Keys.A);
+        boolean derecha = Gdx.input.isKeyPressed(Input.Keys.D);
+        boolean agachar = Gdx.input.isKeyPressed(Input.Keys.S);
+        boolean arriba = Gdx.input.isKeyPressed(Input.Keys.W);
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             contadorSaltos++;
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.N)
-            || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             contadorGolpes++;
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.O)) {
             contadorApuntar++;
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.O) || Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             contadorDisparos++;
         }
 
         tiempoDesdeEntrada += delta;
         if (tiempoDesdeEntrada >= INTERVALO_ENTRADA) {
             tiempoDesdeEntrada = 0f;
-            clienteRed.enviarEntrada(izquierda, derecha, agachar, arriba,
+            hiloCliente.enviarEntrada(izquierda, derecha, agachar, arriba,
                 contadorSaltos, contadorGolpes, contadorApuntar, contadorDisparos);
         }
 
         manejarRevancha(delta, estado);
     }
 
-    /** Con la partida terminada, ENTER pide la revancha. Se repite el pedido hasta que el servidor lo anota. */
     private void manejarRevancha(float delta, EstadoJuego estado) {
         if (estado.fase != EstadoJuego.FASE_FINALIZADA) return;
 
@@ -206,12 +198,11 @@ public class PantallaPartidaOnline implements Screen {
             tiempoDesdeRevancha += delta;
             if (tiempoDesdeRevancha >= INTERVALO_REVANCHA) {
                 tiempoDesdeRevancha = 0f;
-                clienteRed.pedirRevancha();
+                hiloCliente.pedirRevancha();
             }
         }
     }
 
-    /** Los sonidos se deducen de los cambios entre una foto y la siguiente. */
     private void reproducirSonidos(EstadoJuego estado) {
         if (estadoAnterior == null) return;
 
@@ -248,7 +239,6 @@ public class PantallaPartidaOnline implements Screen {
             items.dibujar(estado.botiquin, estado.pistola);
         }
         for (int i = 0; i < 2; i++) {
-            // Si el rival se fue, su personaje no se dibuja
             if (estado == null || estado.estaConectado(i)) {
                 jugadores[i].dibujar();
             }
@@ -274,7 +264,7 @@ public class PantallaPartidaOnline implements Screen {
         String cuenta = "";
 
         if (!conectado) {
-            texto = clienteRed.getMensaje() + "   ENTER: volver al menu";
+            texto = hiloCliente.getMensaje() + "   ENTER: volver al menu";
         } else if (estado != null) {
             switch (estado.fase) {
                 case EstadoJuego.FASE_ESPERANDO:
@@ -321,8 +311,7 @@ public class PantallaPartidaOnline implements Screen {
 
     @Override
     public void dispose() {
-        // Al salir de la partida se avisa al servidor y se cierra el socket
-        clienteRed.cerrar();
+        hiloCliente.cerrar();
 
         if (hud != null) hud.dispose();
         if (mapa != null) mapa.dispose();

@@ -6,7 +6,7 @@ import Pantallas.MenuInicial;
 import Pantallas.PantallaConfiguracion;
 import Pantallas.PantallaInicio;
 import Pantallas.PantallaEspera;
-import Red.ClienteRed;
+import Red.HiloCliente;
 import Pantallas.PantallaPartidaOnline;
 import Utilidades.Render;
 import com.badlogic.gdx.Game;
@@ -60,8 +60,8 @@ public class Principal extends Game implements NavegadorPantallas {
     }
 
     @Override
-    public void irAPartidaOnline(ClienteRed clienteRed) {
-        pantallaPendiente = new PantallaPartidaOnline(this, audio, clienteRed);
+    public void irAPartidaOnline(HiloCliente hiloCliente) {
+        pantallaPendiente = new PantallaPartidaOnline(this, audio, hiloCliente);
     }
 
     @Override

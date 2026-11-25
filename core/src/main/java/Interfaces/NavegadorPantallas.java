@@ -1,6 +1,6 @@
 package Interfaces;
 
-import Red.ClienteRed;
+import Red.HiloCliente;
 
 public interface NavegadorPantallas {
 
@@ -12,5 +12,5 @@ public interface NavegadorPantallas {
     void irAConfiguracion();
 
     /** La partida empieza: se pasa la conexion que ya tenia la sala de espera. */
-    void irAPartidaOnline(ClienteRed clienteRed);
+    void irAPartidaOnline(HiloCliente hiloCliente);
 }

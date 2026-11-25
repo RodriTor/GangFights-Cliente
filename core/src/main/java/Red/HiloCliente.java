@@ -13,14 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Conexion del cliente con el servidor, por UDP. Todo el trabajo de red se hace en un hilo propio,
- * asi la pantalla del juego nunca se queda esperando.
- *
- * Etapas:  BUSCANDO (broadcast) -> CONECTANDO -> CONECTADO.   Si algo falla queda en ERROR con un mensaje.
- * El cliente solo manda teclas (enviarEntrada) y guarda la ultima "foto" que mando el servidor (obtenerEstado).
- */
-public class ClienteRed {
+
+public class HiloCliente extends Thread {
 
     public enum Etapa { INACTIVO, BUSCANDO, CONECTANDO, CONECTADO, ERROR }
 
@@ -40,23 +34,24 @@ public class ClienteRed {
 
     private DatagramSocket socket;
     private InetAddress servidor;
-    private Thread hilo;
     private int secuenciaEntrada = 0;
 
-    /** Empieza a buscar el servidor en la red local. */
+    public HiloCliente() {
+        super("Hilo-Cliente");
+        setDaemon(true);
+    }
+
     public void iniciar() {
         if (activo) return;
 
         activo = true;
         etapa = Etapa.BUSCANDO;
         mensaje = "";
-
-        hilo = new Thread(this::ejecutar, "Cliente-Red");
-        hilo.setDaemon(true); // si se cierra el juego, el hilo no lo mantiene vivo
-        hilo.start();
+        start();
     }
 
-    private void ejecutar() {
+    @Override
+    public void run() {
         try {
             socket = new DatagramSocket();
             socket.setBroadcast(true);
@@ -79,8 +74,6 @@ public class ClienteRed {
         }
     }
 
-
-    // ---------------------------------------------------------------- Busqueda por broadcast
 
     private boolean buscarServidor() throws IOException {
         List<InetAddress> destinos = direccionesDeBusqueda();
@@ -110,11 +103,7 @@ public class ClienteRed {
         return false;
     }
 
-    /**
-     * A donde se manda el BUSCAR: la direccion de broadcast general y la de cada red de esta
-     * computadora (algunas PC tienen varias placas de red y el general solo sale por una).
-     * Para pruebas se puede agregar un servidor con  -Dgangfights.servidor=IP  (no hace falta usarlo).
-     */
+
     private List<InetAddress> direccionesDeBusqueda() throws IOException {
         List<InetAddress> destinos = new ArrayList<>();
 
@@ -142,7 +131,6 @@ public class ClienteRed {
     }
 
 
-    // ---------------------------------------------------------------- Conexion
 
     private boolean conectar() throws IOException {
         for (int intento = 0; intento < INTENTOS_DE_CONEXION && activo; intento++) {
@@ -158,7 +146,7 @@ public class ClienteRed {
                 if (partes[0].equals(Protocolo.JUGADOR) && partes.length > 1) {
                     numeroJugador = Integer.parseInt(partes[1]);
                     etapa = Etapa.CONECTADO;
-                    System.out.println("[CLIENTE] Conectado como jugador " + numeroJugador);
+                    System.out.println(" Conectado como jugador " + numeroJugador);
                     return true;
                 }
                 if (partes[0].equals(Protocolo.LLENO)) {
@@ -173,7 +161,6 @@ public class ClienteRed {
     }
 
 
-    // ---------------------------------------------------------------- Partida
 
     private void recibirEstados() throws IOException {
         long ultimaRecepcion = System.currentTimeMillis();
@@ -189,7 +176,6 @@ public class ClienteRed {
 
                 if (texto.startsWith(Protocolo.ESTADO)) {
                     EstadoJuego estado = EstadoJuego.leer(texto);
-                    // Si llega una foto vieja despues de una nueva (UDP no asegura el orden), se descarta
                     if (estado != null && esMasNuevo(estado)) {
                         ultimoEstado = estado;
                     }
@@ -216,11 +202,7 @@ public class ClienteRed {
         return anterior == null || estado.secuencia > anterior.secuencia;
     }
 
-    /**
-     * Manda las teclas que estan apretadas ahora (izquierda, derecha, agachar y arriba) y cuatro contadores
-     * (saltos, golpes, apuntar y disparos) que solo suben: asi, aunque se pierda un mensaje, el servidor se
-     * entera igual de que hubo una pulsacion.
-     */
+
     public void enviarEntrada(boolean izquierda, boolean derecha, boolean agachar, boolean arriba,
                               int saltos, int golpes, int apuntar, int disparos) {
         if (etapa != Etapa.CONECTADO) return;
@@ -236,8 +218,6 @@ public class ClienteRed {
         }
     }
 
-
-    // ---------------------------------------------------------------- Utilidades de red
 
     private DatagramPacket recibir() throws IOException {
         DatagramPacket paquete = new DatagramPacket(new byte[Protocolo.TAMANIO_PAQUETE], Protocolo.TAMANIO_PAQUETE);
@@ -264,7 +244,6 @@ public class ClienteRed {
         try {
             socket.send(new DatagramPacket(datos, datos.length, destino, Protocolo.PUERTO));
         } catch (IOException | RuntimeException e) {
-            // Una direccion de broadcast puede no ser alcanzable: se sigue con las demas
         }
     }
 
@@ -282,7 +261,6 @@ public class ClienteRed {
         }
     }
 
-    /** Se va de la partida avisando al servidor y libera el socket y el hilo. */
     public void cerrar() {
         if (etapa == Etapa.CONECTADO) {
             // Se avisa varias veces porque UDP puede perder mensajes
@@ -298,8 +276,8 @@ public class ClienteRed {
         cerrarSocket();
 
         try {
-            if (hilo != null && Thread.currentThread() != hilo) {
-                hilo.join(500);
+            if (Thread.currentThread() != this) {
+                join(500);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -315,7 +293,6 @@ public class ClienteRed {
         return mensaje;
     }
 
-    /** 1 o 2 (0 mientras no se conecto). */
     public int getNumeroJugador() {
         return numeroJugador;
     }
@@ -323,8 +300,6 @@ public class ClienteRed {
     public int getJugadoresEnServidor() {
         return jugadoresEnServidor;
     }
-
-    /** La ultima foto recibida, o null si todavia no llego ninguna. */
     public EstadoJuego obtenerEstado() {
         return ultimoEstado;
     }

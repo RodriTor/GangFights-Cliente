@@ -27,8 +27,8 @@ public class PantallaConfiguracion implements Screen {
 
     private static final int[][] RESOLUCIONES = {{1280, 720}, {1366, 768}, {1600, 900}, {1920, 1080}};
     private static final String[] CONTROLES = {
-        "TECLAS 1", "Moverse: A / D", "Saltar: W", "Agacharse: S", "Golpear: 1", "Pistola: 2 apuntar / O disparar",
-        "TECLAS 2", "Moverse: FLECHA IZQ / DER", "Saltar: FLECHA ARRIBA", "Agacharse: FLECHA ABAJO", "Golpear: N", "Pistola: M apuntar / E disparar"};
+        "TECLAS (iguales para los dos jugadores)", "Moverse: A / D", "Saltar: W", "Agacharse / recoger items: S",
+        "Golpear: 1 o ESPACIO", "Pistola: O sacar o guardar / P disparar", "Subir o bajar la mira: W / S"};
 
     private static final float X_CATEGORIAS = 100f, X_PANEL = 420f, X_VALORES = 990f, Y_INICIO = 560f;
     private static final float ESCALA_ELEGIDA = 1.2f;
@@ -212,9 +212,7 @@ public class PantallaConfiguracion implements Screen {
             agregarFila(1, "Resolucion", resolucion == 0 ? "Recomendada (" + medidas + ")" : medidas);
         } else if (categoria == CONTROL) {
             for (String linea : CONTROLES) {
-                if (linea.equals("TECLAS 2")) y -= 20f;
-                boolean jugador = linea.startsWith("TECLAS");
-                agregarLinea(linea, !jugador ? Color.WHITE : linea.endsWith("1") ? Color.CYAN : Color.ORANGE);
+                agregarLinea(linea, linea.startsWith("TECLAS") ? Color.CYAN : Color.WHITE);
             }
         }
 
